@@ -10,7 +10,7 @@
 #include <Rdefines.h>
 #include <Rinternals.h>
 
-
+#include "bhpm_Rdefines.h"
 #include "bhpm1a_poisson_mc_hier2_lev0.h"
 #include "bhpm1a_poisson_mc_hier3_lev0.h"
 #include "bhpmBB_poisson_mc_hier3_lev0.h"
@@ -18,7 +18,7 @@
 
 using namespace std;
 
-static const char *rcsId = "$Id: bhpmBB_poisson_mc_hier3_lev2.cpp,v 1.11 2019/05/14 09:29:48 clb13102 Exp clb13102 $";
+//static const char *rcsId = "$Id: bhpmBB_poisson_mc_hier3_lev2.cpp,v 1.11 2019/05/14 09:29:48 clb13102 Exp clb13102 $";
 
 bhpmBB_poisson_mc_hier3_lev2::bhpmBB_poisson_mc_hier3_lev2()
 {
@@ -224,7 +224,7 @@ void bhpmBB_poisson_mc_hier3_lev2::initSimParams(SEXP sSim_Params)
 
 	int len = Rf_length(sSim_Params);
 
-	if (len && isNewList(sSim_Params)) {
+	if (len && Rf_isNewList(sSim_Params)) {
 
 		SEXP sVariables = R_NilValue;
 		SEXP sParams = R_NilValue;
@@ -235,7 +235,7 @@ void bhpmBB_poisson_mc_hier3_lev2::initSimParams(SEXP sSim_Params)
 		SEXP sC_index = R_NilValue;
 		SEXP sGroup = R_NilValue;
 
-		SEXP names = getAttrib(sSim_Params, R_NamesSymbol);
+		SEXP names = Rf_getAttrib(sSim_Params, R_NamesSymbol);
 
 		for (i = 0; i < len; i++) {
 			if (strcmp(sColValue, CHAR(STRING_ELT(names, i))) == 0) {
@@ -475,6 +475,7 @@ void bhpmBB_poisson_mc_hier3_lev2::releaseL3Variables()
 		for (c = 0; c < gChains; c++) {
 			delete [] beta_pi[c];
 		}
+		delete [] beta_pi;
 		beta_pi = NULL;
 	}
 
@@ -1380,39 +1381,39 @@ void bhpmBB_poisson_mc_hier3_lev2::releaseL3Samples()
 
 	if (mu_gamma_0_samples != NULL) {
 		for (c = 0; c < gChains; c++) {
-            free(mu_gamma_0_samples[c]);
+            delete mu_gamma_0_samples[c];
 		}
-		free(mu_gamma_0_samples);
+		delete [] mu_gamma_0_samples;
 		mu_gamma_0_samples = NULL;
 	}
 
 	if (mu_theta_0_samples != NULL) {
 		for (c = 0; c < gChains; c++) {
 			for (t = 0; t < gNumComparators; t++) {
-            	free(mu_theta_0_samples[c][t]);
+            	delete [] mu_theta_0_samples[c][t];
 			}
-            free(mu_theta_0_samples[c]);
+            delete [] mu_theta_0_samples[c];
 		}
-		free(mu_theta_0_samples);
+		delete [] mu_theta_0_samples;
 		mu_theta_0_samples = NULL;
 	}
 
 	if (tau2_gamma_0_samples != NULL) {
 		for (c = 0; c < gChains; c++) {
-            free(tau2_gamma_0_samples[c]);
+            delete [] tau2_gamma_0_samples[c];
 		}
-		free(tau2_gamma_0_samples);
+		delete [] tau2_gamma_0_samples;
 		tau2_gamma_0_samples = NULL;
 	}
 
 	if (tau2_theta_0_samples != NULL) {
 		for (c = 0; c < gChains; c++) {
 			for (t = 0; t < gNumComparators; t++) {
-				free(tau2_theta_0_samples[c][t]);
+				delete [] tau2_theta_0_samples[c][t];
 			}
-            free(tau2_theta_0_samples[c]);
+            delete [] tau2_theta_0_samples[c];
 		}
-		free(tau2_theta_0_samples);
+		delete [] tau2_theta_0_samples;
 		tau2_theta_0_samples = NULL;
 	}
 }
@@ -1455,7 +1456,7 @@ SEXP bhpmBB_poisson_mc_hier3_lev2::getL3Samples(double** &data)
 	SEXP samples = R_NilValue;
 	SEXP dim = R_NilValue;
 
-	PROTECT(samples = allocVector(REALSXP, gChains * (gIter - gBurnin)));
+	PROTECT(samples = Rf_allocVector(REALSXP, gChains * (gIter - gBurnin)));
 
 	int i = 0;
 	int c = 0;
@@ -1469,12 +1470,12 @@ SEXP bhpmBB_poisson_mc_hier3_lev2::getL3Samples(double** &data)
 	delete [] data;
 	data = NULL;
 
-	PROTECT(dim = allocVector(INTSXP, 2));
+	PROTECT(dim = Rf_allocVector(INTSXP, 2));
 
 	INTEGER(dim)[0] = (gIter - gBurnin);
 	INTEGER(dim)[1] = gChains;
 
-	setAttrib(samples, R_DimSymbol, dim);
+	Rf_setAttrib(samples, R_DimSymbol, dim);
 
 	UNPROTECT(2);
 
@@ -1486,7 +1487,7 @@ SEXP bhpmBB_poisson_mc_hier3_lev2::getL3Samples(double*** &data)
 	SEXP samples = R_NilValue;
 	SEXP dim = R_NilValue;
 
-	PROTECT(samples = allocVector(REALSXP, gChains * gNumComparators * (gIter - gBurnin)));
+	PROTECT(samples = Rf_allocVector(REALSXP, gChains * gNumComparators * (gIter - gBurnin)));
 
 	int i = 0;
 	int c = 0;
@@ -1498,18 +1499,19 @@ SEXP bhpmBB_poisson_mc_hier3_lev2::getL3Samples(double*** &data)
 			i += (gIter - gBurnin);
 			delete [] data[c][t];
 		}
+		delete [] data[c];
 		data[c] = NULL;
 	}
 	delete [] data;
 	data = NULL;
 
-	PROTECT(dim = allocVector(INTSXP, 3));
+	PROTECT(dim = Rf_allocVector(INTSXP, 3));
 
 	INTEGER(dim)[0] = (gIter - gBurnin);
 	INTEGER(dim)[1] = gNumComparators;
 	INTEGER(dim)[2] = gChains;
 
-	setAttrib(samples, R_DimSymbol, dim);
+	Rf_setAttrib(samples, R_DimSymbol, dim);
 
 	UNPROTECT(2);
 
@@ -1575,16 +1577,16 @@ SEXP bhpmBB_poisson_mc_hier3_lev2::getL3Accept(int* &data)
 	SEXP acc = R_NilValue;
 	SEXP dim = R_NilValue;
 
-	PROTECT(acc = allocVector(INTSXP, gChains));
+	PROTECT(acc = Rf_allocVector(INTSXP, gChains));
 	memcpy(INTEGER(acc), data, gChains*sizeof(int));
 
 	delete [] data;
 	data = NULL;
 
-	PROTECT(dim = allocVector(INTSXP, 1));
+	PROTECT(dim = Rf_allocVector(INTSXP, 1));
 
 	INTEGER(dim)[0] = gChains;
-	setAttrib(acc, R_DimSymbol, dim);
+	Rf_setAttrib(acc, R_DimSymbol, dim);
 
 	UNPROTECT(2);
 
@@ -1596,7 +1598,7 @@ SEXP bhpmBB_poisson_mc_hier3_lev2::getL3Accept(int** &data)
 	SEXP acc = R_NilValue;
 	SEXP dim = R_NilValue;
 
-	PROTECT(acc = allocVector(INTSXP, gChains * gNumComparators));
+	PROTECT(acc = Rf_allocVector(INTSXP, gChains * gNumComparators));
 	int c = 0;
 	for (c = 0; c < gChains; c++) {
 		memcpy(INTEGER(acc), data, gNumComparators*sizeof(int));
@@ -1606,11 +1608,11 @@ SEXP bhpmBB_poisson_mc_hier3_lev2::getL3Accept(int** &data)
 	delete [] data;
 	data = NULL;
 
-	PROTECT(dim = allocVector(INTSXP, 2));
+	PROTECT(dim = Rf_allocVector(INTSXP, 2));
 
 	INTEGER(dim)[0] = gChains;
 	INTEGER(dim)[1] = gNumComparators;
-	setAttrib(acc, R_DimSymbol, dim);
+	Rf_setAttrib(acc, R_DimSymbol, dim);
 
 	UNPROTECT(2);
 
